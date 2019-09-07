@@ -1,1 +1,1 @@
-fitting_a_model_to_data
+This repo contains my solutions to the exercises in the included pdf, "Data analysis recipes: fitting a model to data."
