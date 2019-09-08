@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 # %matplotlib inline
 
 # %%
+# Import data
 table_1 = 'Table_1.txt'
 with open(table_1) as f:
     ncols_1 = len(f.readline().split(','))

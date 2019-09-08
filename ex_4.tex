@@ -17,14 +17,38 @@
 \bibpunct{(}{)}{;}{a}{}{,} % to follow the A&A style
 \bibliographystyle{aa}
 
+\usepackage{physics}
 
 \begin{document}
 
 \noindent
 
-{\bf Exercise 4}: Imagine a set of N measurements $t_i$, with uncertainty variances $s^2_{t_i}$, all of the same (unknown) quantity T. Assuming the generative model that each $t_i$ differs from T by a Gaussian-distributed offset, taken from a Gaussian with zero mean and variance $s^2_{t_i}$, write down an expression for the log likelihood ln L for the data given the model parameter T. Take a derivative and show that the maximum likelihood value for T is the usual weighted mean.
+{\bf Exercise 4}: Imagine a set of N measurements $t_i$, with uncertainty variances $\sigma^2_{t_i}$, all of the same (unknown) quantity T. Assuming the generative model that each $t_i$ differs from T by a Gaussian-distributed offset, taken from a Gaussian with zero mean and variance $\sigma^2_{t_i}$, write down an expression for the log likelihood ln L for the data given the model parameter T. Take a derivate to show that the maximum likelihood value for T is the usual weighted mean.
 
-Stuff
+{\bf Solution:}
+The frequency distribution for the data $y_i$ in this model is
+\begin{equation}
+    p(t_i | \sigma_t_i, T) = \frac{1}{\sqrt{2 \pi \sigma_t_i^2}} \exp\bigg(-\frac{(t_i - T)^2}{2 \sigma_t_i^2} \bigg) ,
+\end{equation}
 
+The objective function that maximizes the probability of the observed data given the model is the likelihood, defined as
+\begin{equation}
+    \mathfrak{L} = \prod_{i=1}^{N} p(t_i | \sigma_t_i, T)
+\end{equation}
+since the data are assumed to be independent. Taking the logarithm,
+\begin{equation}
+    \ln{\mathfrak{L}} = C - \sum_{i=1}^{N} \frac{(t_i - T)^2}{2\sigma_t_i^2}
+\end{equation}
+for some constant C. Maximizing $\ln{\mathfrac{L}}$ by taking the derivative with respect to the model parameter $T$ gives
+\begin{equation}
+    0 = \pdv{ln{\mathfrak{L}}}{T} = + \sum_{i=1}^{N} \frac{t_i - T}{\sigma_t_i^2}
+\end{equation}
+\begin{equation}
+    \implies NT = \sum_{i=1}^{N} t_i
+\end{equation}
+\begin{equation}
+    \implies T = \frac{1}{N} \sum_{i=1}^{N} t_i
+\end{equation}
+This is the usual weighted mean, $\bar{t} = \frac{\sum_{i=1}^{N} w_i t_i}{\sum_{i=1}^{N} w_i}$ with weights $w_i = 1$.
 
 \end{document}
