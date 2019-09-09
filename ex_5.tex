@@ -17,12 +17,40 @@
 \bibpunct{(}{)}{;}{a}{}{,} % to follow the A&A style
 \bibliographystyle{aa}
 
+\usepackage{physics}
+
 \begin{document}
 
 \noindent
 
-{\bf Exercise 5}: Take the matrix formulation for χ2 given in equation (7) and take derivatives to show that the minimum is at the matrix location given in equation (5). \\
+{\bf Exercise 5}: Take the matrix formulation for χ2 given in equation (7) and take derivatives to show that the minimum is at the matrix location given in equation (5).
 
-
+{\bf Solution:} Equation (7) reads
+\begin{equation}
+    \chi^2 = \sum_{i=1}^{N} \frac{(y_i - f(x_i))^2}{\sigma_{y_i}^2} \equiv \mathbf{(Y - A X)^T C^{-1} (Y - A X)}
+\end{equation}
+In order to take derivatives, we will first convert this matrix expression into an equivalent one involving matrix components:
+\begin{equation}
+    \begin{aligned}
+        \chi^2  &= \mathbf{(Y^T - X^T A^T) C^{-1} (Y - A X)} \\
+                &= (y_i - x_k A_{ki}) C_{il}^{-1} (y_l - A_{ln} x_n) \\
+                &= y_i C_{il}^{-1} y_l - x_k A_{ki} C_{il}^{-1} y_l - y_i C_{il}^{-1} A_{ln} x_n + x_k A_{ki} C_{il}^{-1} A_{ln} x_n
+    \end{aligned}
+\end{equation}
+where the Einstein summation convention has been utilized. Taking the derivative to find the minimum,
+\begin{equation}
+    \begin{aligned}
+        0 = \pdv{\chi^2}{x_m}   &= - A_{mi} C_{il}^{-1} y_l - y_i C_{il}^{-1} A_{lm} + A_{mi} C_{il}^{-1} A_{ln} x_n + x_k A_{ki} C_{il}^{-1} A_{lm} \\
+                            &= - \mathbf{A^T C^{-1} Y - Y^{T} C^{-1} A + A^T C^{-1} A X + X^T A^T C^{-1} A}
+    \end{aligned}
+\end{equation}
+Notice that each of these terms is a scalar, and so must equal their transpose. For example, $\mathbf{(A^T C^{-1} y)^T} = \mathbf{y^T C^{-1} A} = \mathbf{A^T C^{-1} y}$ since $\mathbf{C^{-1}}$ is symmetric. The first two and the last two terms are equal, and so
+\begin{equation}
+    \begin{aligned}
+        0 &= - 2 \mathbf{A^T C^{-1} Y} + 2 \mathbf{A^T C^{-1} A X} \\
+        \implies \mathbf{X} &= \mathbf{(A^T C^{-1} A)^{-1} (A^T C^{-1} Y)}
+    \end{aligned}
+\end{equation}
+This is exactly the expression given in equation (5) of the text.
 
 \end{document}
