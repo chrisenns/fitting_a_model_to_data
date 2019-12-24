@@ -1,16 +1,21 @@
-#%% md
-# Exercise 6: Using the mixture model proposed above—that treats the distribution as a mixture of a thin line containing
-# a fraction [1−Pb] of the points and a broader Gaussian containing a fraction Pb of the points—find the best- fit
-# (the maximum a posteriori) straight line y = mx + b for the x, y, and σy for the data in Table 1 on page 6. Before
-# choosing the MAP line, marginalize over parameters (Pb, Yb, Vb). That is, if you take a sampling approach, this means
-# sampling the full five-dimensional parameter space but then choosing the peak value in the histogram of samples in the
-# two-dimensional parame- ter space (m, b). Make one plot showing this two-dimensional histogram, and another showing
-# the points, their uncertainties, and the MAP line. How does this compare to the standard result you obtained in
-# Exercise 2? Do you like the MAP line better or worse? For extra credit, plot a sampling of 10 lines drawn from the
-# marginalized posterior distribution for (m, b) (marginalized over Pb, Yb, Vb) and plot the samples as a set of light
-# grey or transparent lines. Your plot should look like Figure 4.
+# %% md Exercise 6: Using the mixture model proposed above—that treats the
+# distribution as a mixture of a thin line containing a fraction [1−Pb] of
+# the points and a broader Gaussian containing a fraction Pb of the
+# points—find the best- fit (the maximum a posteriori) straight line y = mx +
+# b for the x, y, and σy for the data in Table 1 on page 6. Before choosing
+# the MAP line, marginalize over parameters (Pb, Yb, Vb). That is, if you
+# take a sampling approach, this means sampling the full five-dimensional
+# parameter space but then choosing the peak value in the histogram of
+# samples in the two-dimensional parame- ter space (m, b). Make one plot
+# showing this two-dimensional histogram, and another showing the points,
+# their uncertainties, and the MAP line. How does this compare to the
+# standard result you obtained in Exercise 2? Do you like the MAP line better
+# or worse? For extra credit, plot a sampling of 10 lines drawn from the
+# marginalized posterior distribution for (m, b) (marginalized over Pb, Yb,
+# Vb) and plot the samples as a set of light grey or transparent lines. Your
+# plot should look like Figure 4.
 
-#%%
+# %%
 import corner
 from IPython import display
 import emcee
@@ -20,7 +25,7 @@ import numpy as np
 import pandas as pd
 
 
-#%% Import data, do not skip any points
+# %% Import data, do not skip any points
 table_path = 'Table_1.txt'
 table = pd.read_csv(table_path, sep=' ')
 x, y, sy = table['x'], table['y'], table['sy']
@@ -30,11 +35,11 @@ table_trim = table[4:]
 x_trim, y_trim, sy_trim = table_trim['x'], table_trim['y'], table_trim['sy']
 
 
-#%% md
-# First, redo the least-squares approach to fitting a line by making the model an object with the data as attributes.
+# %% md First, redo the least-squares approach to fitting a line by making
+# the model an object with the data as attributes.
 
 
-#%%
+# %%
 class StraightLineLstSqModel:
     def __init__(self, u, v, sv):
         """
@@ -90,7 +95,8 @@ class StraightLineLstSqModel:
         y1 = m1 * x1 + b1
 
         fig1, ax1 = plt.subplots(1, 1)
-        data_style = dict(linestyle='none', marker='o', color='k', ecolor='#666666')
+        data_style = dict(linestyle='none', marker='o', color='k',
+                          ecolor='#666666')
         ax1.errorbar(self.x, self.y, yerr=self.sy, **data_style)
         ax1.plot(x1, y1, color='b')
         ax1.set_xlabel(r'$x$', fontsize=20)
@@ -106,7 +112,7 @@ class StraightLineLstSqModel:
         plt.show()
 
 
-#%%
+# %%
 lstsq_model = StraightLineLstSqModel(x, y, sy)
 lstsq_model.plot_lstsq_model()
 
@@ -116,32 +122,35 @@ b_ls_err, m_ls_err = np.sqrt(cov_ls[0, 0]), np.sqrt(cov_ls[1, 1])
 x0 = np.linspace(min(x), max(x), 200)
 y0 = m_ls * x0 + b_ls
 
-#%%
+# %%
 lstsq_model_trim = StraightLineLstSqModel(x_trim, y_trim, sy_trim)
 lstsq_model_trim.plot_lstsq_model()
 
 pars_ls_trim, cov_ls_trim = lstsq_model_trim.least_squares()
 b_ls_trim, m_ls_trim = pars_ls_trim
-b_ls_err_trim, m_ls_err_trim = np.sqrt(cov_ls_trim[0, 0]), np.sqrt(cov_ls_trim[1, 1])
+b_ls_err_trim, m_ls_err_trim = np.sqrt(cov_ls_trim[0, 0]), \
+                               np.sqrt(cov_ls_trim[1, 1])
 x0_trim = np.linspace(min(x), max(x), 200)
 y0_trim = m_ls_trim * x0 + b_ls_trim
 
 
-#%% md
+# %% md
 # Find best fit using a Bayesian model. Should give identical result.
 # Comes from https://dfm.io/posts/mixture-models/
 
 
-#%%
-# Define the probabilistic model...
+# %% Define the probabilistic model...
+
+labels = ["$m$", "$b$", "$P$", "$Y$", "$ln V$"]
+bounds = [(1.4, 3), (-20, 100), (0, 1), (100, 700), (4, 16)]
+
 # A simple prior:
-labels = ["$m$", "$b$", "$P$", "$Y$", "$\ln V$"]
-bounds = [(1, 3), (-20, 100), (0, 1), (100, 600), (0, 20)]
 def lnprior(p):
     # We'll just put reasonable uniform priors on all the parameters.
     if not all(b[0] < v < b[1] for v, b in zip(p, bounds)):
         return -np.inf
     return 0
+
 
 # The "foreground" linear likelihood:
 def lnlike_fg(p):
@@ -149,76 +158,85 @@ def lnlike_fg(p):
     model = m * x + b
     return -0.5 * (((model - y) / sy) ** 2 + 2 * np.log(sy))
 
+
 # The "background" outlier likelihood:
 def lnlike_bg(p):
     _, _, P, Y, lnV = p
     var = np.exp(lnV) + sy**2
     return -0.5 * ((Y - y) ** 2 / var + np.log(var))
 
+
 # Full probabilistic model.
 def lnprob(p):
     m, b, P, Y, lnV = p
-    
+
     # First check the prior.
     lp = lnprior(p)
     if not np.isfinite(lp):
         return -np.inf, None
-    
+
     # Compute the vector of foreground likelihoods and include the q prior.
     ll_fg = lnlike_fg(p)
     arg1 = ll_fg + np.log(1.0 - P)
-    
+
     # Compute the vector of background likelihoods and include the q prior.
     ll_bg = lnlike_bg(p)
     arg2 = ll_bg + np.log(P)
-    
+
     # Combine these using log-add-exp for numerical stability.
     ll = np.sum(np.logaddexp(arg1, arg2))
-    
+
     # We're using emcee's "blobs" feature in order to keep track of the
     # foreground and background likelihoods for reasons that will become
     # clear soon.
     return lp + ll, (arg1, arg2)
 
 
-#%%
-%%time
+def run_walkers(p0, ndim, nwalkers):
+    p0 = [p0 + 1e-5 * np.random.randn(ndim) for k in range(nwalkers)]
+
+    # Set up the sampler.
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
+
+    # Run a burn-in chain and save the final location.
+    pos, _, _, _ = sampler.run_mcmc(p0, 500);
+
+    # Run the production chain.
+    sampler.reset()
+    sampler.run_mcmc(pos, 1000);
+
+    return sampler.flatchain
+
+
+# %%
 # Initialize the walkers at a reasonable location.
-ndim, nwalkers = 5, 32
 p0 = np.array([2, 0, 0.5, 200, 10])
-p0 = [p0 + 1e-5 * np.random.randn(ndim) for k in range(nwalkers)]
-
-# Set up the sampler.
-sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
-
-# Run a burn-in chain and save the final location.
-pos, _, _, _ = sampler.run_mcmc(p0, 500);
-
-# Run the production chain.
-sampler.reset()
-sampler.run_mcmc(pos, 1000);
+ndim, nwalkers = 5, 32
+samples = run_walkers(p0, ndim, nwalkers)
 
 
-#%%
+# %%
 fig, axes = plt.subplots(ndim, figsize=(10, 7), sharex=True)
-samples = sampler.flatchain
 for i in range(ndim):
+    avg = np.mean(samples[:, i])
     ax = axes[i]
     ax.plot(samples[:, i], "k", alpha=0.5)
+    ax.axhline(avg, color="r", label="Average: {:.2f}".format(avg))
     ax.set_xlim(0, len(samples))
     ax.set_ylabel(labels[i])
     ax.yaxis.set_label_coords(-0.1, 0.5)
+    ax.legend(loc="upper right")
+    plt.legend()
 
 axes[-1].set_xlabel("step number");
 plt.show()
 
-#%%
-labels = ["$m$", "$b$", "$P$", "$Y$", "$\ln V$"]
+# %%
 corner.corner(samples, bins=35, range=bounds, labels=labels)
 plt.show()
 
 
-#%%
+# %%
 low, med, hi = np.percentile(samples, [16, 50, 84], axis=0)
 upper, lower = hi - med, med - low
 
@@ -233,33 +251,37 @@ disp_str = "${}$".format(disp_str)
 display.Latex(data=disp_str)
 
 
-#%%
+# %%
+# Print out the posterior probability that each point is an outlier
 norm = 0.0
 post_prob = np.zeros(len(x))
-for i in range(sampler.chain.shape[1]):
-    for j in range(sampler.chain.shape[0]):
-        ll_fg, ll_bg = sampler.blobs[i][j]
+for i in range(samples.chain.shape[1]):
+    for j in range(samples.chain.shape[0]):
+        ll_fg, ll_bg = samples.blobs[i][j]
         post_prob += np.exp(ll_fg - np.logaddexp(ll_fg, ll_bg))
         norm += 1
 post_prob /= norm
 print(", ".join(map("{0:.3f}".format, post_prob)))
 
 
-#%%
+# %%
 # Plot the prediction.
-fig, ax = plt.subplots(1, figsize=(15,10))
+fig, ax = plt.subplots(1, figsize=(15, 10))
+
+# Plot the least squares solution.
+ax.plot(x0, y0, label="Least squares solution", color="g")
 
 # Compute the quantiles of the predicted line and plot them.
 A = np.vander(x0, 2)
-lines = np.dot(sampler.flatchain[:, :2], A.T)
+lines = np.dot(samples.flatchain[:, :2], A.T)
 quantiles = np.percentile(lines, [16, 50, 84], axis=0)
 
-# ax.fill_between(x0, quantiles[0], quantiles[2], color="#8d44ad", alpha=0.5,
-#                 label='Range of mixture models between quartiles')
+ax.fill_between(x0, quantiles[0], quantiles[2], color="#8d44ad", alpha=0.5,
+                label='Range of mixture models between quartiles')
 
-n = 10  # # lines to plot
-for line in lines[::int(len(lines)/10)]:
-    plt.plot(x0, line, color='b', alpha=0.4)
+# n = 10  # # lines to plot
+# for line in lines[::int(len(lines)/10)]:
+#     plt.plot(x0, line, color='b', alpha=0.4)
 
 ax.plot(x0, quantiles[1], color="r", label='Median mixture model')
 
@@ -284,8 +306,8 @@ mcmc_text = r'Mixture model: $y = ' + \
             r'$({val_b:.2f}^{{+{plus_b:.2f}}}_{{-{minus_b:.2f}}})$'
 xloc = 90
 yloc = 140
-ax.text(x=xloc, y=yloc, s=mcmc_text.format(val_m=med[0], plus_m=upper[0], minus_m=lower[0], 
-                                           val_b=med[1], plus_b=upper[1], minus_b=lower[1]), 
+ax.text(x=xloc, y=yloc, s=mcmc_text.format(val_m=med[0], plus_m=upper[0], minus_m=lower[0],
+                                           val_b=med[1], plus_b=upper[1], minus_b=lower[1]),
                                            fontsize=20)
 ax.tick_params('both', labelsize=18)
 ax.set_xlabel(r'$x$', fontsize=20)
@@ -293,5 +315,3 @@ ax.set_ylabel(r'$y$', fontsize=20)
 
 ax.legend(fontsize=18)
 plt.show()
-
-#%%
